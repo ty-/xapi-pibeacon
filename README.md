@@ -7,6 +7,6 @@ Clone this repository to your Raspberry Pi and ensure all your dependencies are 
 
 To run:
 
-`./ibeacon_scan | ./send-statement`
+`./ibeacon_scan | ./beacon-toggle`
 
 This will run until the UUID is found, it will send a statement to the LRS with curl, then exit.

@@ -8,6 +8,7 @@ PASS="xapi-tools"
 AUTH=$(echo -n "$USER:$PASS" | base64)
 
 I=0
+ENABLED=false
 
 echo "if beacon time on reaches 15, statement will be sent"
 
@@ -16,9 +17,11 @@ while read line; do
   if [[ $(echo $line | grep "2F234454-CF6D-4A0F-ADF2-F4911BA9FFA6") ]]; then
 
     I=$((I+1))
-    echo $I
     
-    if [[ $I == 15 ]]; then
+    if [[ $I == 15 && $ENABLED == false ]]; then
+
+      ENABLED=true
+
       STMT='{
           "actor": {
               "mbox": "mailto:tyler.mulligan.ctr@adlnet.gov",
@@ -32,7 +35,7 @@ while read line; do
               }
           },
           "object": {
-              "id": "http://adlnet.gov/expapi/activities/example",
+              "id": "http://adlnet.gov/expapi/activities/beacon",
               "definition": {
                   "name": {
                       "en-US": "beacon_tag"
@@ -48,7 +51,51 @@ while read line; do
       curl -i -X POST -H "X-Experience-API-Version: 1.0.1" -H "Authorization: Basic $AUTH" --data-binary "$STMT" $ENDPOINT
 
     fi
+
+    if [[ $I == 100 ]]; then
+      I=0
+    fi
   else
-    I=0
+    I=$((I-1))
+    if [[ $I == -40 && $ENABLED == true ]]; then
+
+      ENABLED=false
+
+      STMT='{
+          "actor": {
+              "mbox": "mailto:tyler.mulligan.ctr@adlnet.gov",
+              "name": "EMT_001",
+              "objectType": "Agent"
+          },
+          "verb": {
+              "id": "http://adlnet.gov/expapi/verbs/terminated",
+              "display": {
+                  "en-US": "terminated"
+              }
+          },
+          "object": {
+              "id": "http://adlnet.gov/expapi/activities/beacon",
+              "definition": {
+                  "name": {
+                      "en-US": "beacon_tag"
+                  },
+                  "description": {
+                      "en-US": "beacon_tag has bee disabled"
+                  }
+              },
+              "objectType": "Activity"
+          }
+      }'
+
+      curl -i -X POST -H "X-Experience-API-Version: 1.0.1" -H "Authorization: Basic $AUTH" --data-binary "$STMT" $ENDPOINT
+
+    fi
+
+    if [[ $I == -100 ]]; then
+      I=0
+    fi
   fi
+
+  echo $I
+
 done
